@@ -1,0 +1,68 @@
+name: offline-tests
+
+# This repository has no HTTP service or database, so CI runs the offline
+# contract suite only. Live provider calls need TOGETHER_API_KEY /
+# OPENAI_API_KEY and are intentionally not part of CI.
+"on":
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: offline-tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    name: pytest (Python 3.10, no API keys)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    env:
+      PYTHONDONTWRITEBYTECODE: "1"
+      PYTHONUNBUFFERED: "1"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-test.txt
+
+      - name: Install CPU-only torch
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install \
+            --extra-index-url https://download.pytorch.org/whl/cpu \
+            "torch==2.2.2+cpu"
+
+      - name: Install pinned test dependencies
+        run: |
+          python -m pip install -r requirements-test.txt
+          python -m pip install -e ./FastChat --no-deps
+
+      - name: Verify environment and data contracts
+        run: python scripts/verify_env.py
+
+      - name: Compile entry points
+        run: |
+          python -m py_compile \
+            utils.py moa.py advanced-moa.py bot.py tests.py \
+            generate_for_alpaca_eval.py generate_for_flask.py \
+            generate_for_mt_bench.py eval_mt_bench.py \
+            show_mt_bench_result.py \
+            FLASK/gpt_review/gpt4_eval.py \
+            FLASK/gpt_review/aggregate_skill.py \
+            FLASK/openai_concurrent.py
+
+      - name: Run offline tests
+        run: python -m pytest -q

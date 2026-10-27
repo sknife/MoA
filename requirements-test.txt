@@ -1,0 +1,50 @@
+# Pinned offline-test stack for CI and clean machines.
+#
+# The local install script can reuse the workstation's conda packages
+# (--system-site-packages), but CI cannot. These pins are the versions that
+# were actually exercised by `pytest tests` on 2026-10-27. Keep torch out of
+# this file: CI installs the smaller CPU wheel separately.
+#
+# Install:
+#   pip install --extra-index-url https://download.pytorch.org/whl/cpu "torch==2.2.2+cpu"
+#   pip install -r requirements-test.txt
+#   pip install -e ./FastChat --no-deps
+
+openai==1.82.0
+fire==0.7.1
+loguru==0.7.3
+datasets==2.19.0
+typer==0.15.3
+rich==14.3.4
+
+# datasets 2.19 / transformers 4.36 need this trio; newer hub releases break
+# transformers 4.36 at import time.
+huggingface_hub==0.25.2
+fsspec==2024.2.0
+pyarrow==14.0.2
+
+# FastChat imports LlamaTokenizer and transformers.cache_utils.
+transformers==4.36.2
+tokenizers==0.15.2
+accelerate==0.26.1
+
+# numpy 1.26 keeps the CPU torch 2.2 wheel and the pandas wheel aligned.
+numpy==1.26.4
+pandas==2.2.3
+
+# click 8.2 breaks typer 0.15 help rendering (make_metavar(ctx)).
+click==8.1.8
+
+# Imported directly by root scripts / FLASK review but not declared in
+# requirements.txt.
+together==3.0.0
+shortuuid==1.0.13
+requests==2.34.2
+
+# FastChat model/llm_judge import surface.
+anthropic==0.65.0
+psutil==5.9.0
+tqdm==4.70.1
+tenacity==8.5.0
+
+pytest==9.1.1
